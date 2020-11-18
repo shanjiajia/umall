@@ -447,11 +447,10 @@ export const reqseckAdd =(user)=>{
     })
 }
 //获取限时秒杀列表
-export const reqseckList = (p)=>{
+export const reqseckList = ()=>{
     return axios({
         url:baseUrl+'/api/secklist',
         method:'get',
-        params:p
     })
 }
 //删除

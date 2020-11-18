@@ -9,7 +9,7 @@ const mutations={
 };
 const actions={
     reqList(context){
-        reqseckList({istree:true}).then(res=>{
+        reqseckList().then(res=>{
             context.commit('changeList',res.data.list)
         })
     }
