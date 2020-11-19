@@ -1,8 +1,8 @@
 <template>
   <div>
-    <el-dialog :title="info.title" :visible.sync="info.isshow" @closed='closed'>
-      <el-form :model="banner">
-        <el-form-item label="标题" label-width="120px">
+    <el-dialog :title="info.title" :visible.sync="info.isshow" @closed="closed">
+      <el-form :model="banner" :rules="rules">
+        <el-form-item label="标题" label-width="120px" prop="title">
           <el-input v-model="banner.title" autocomplete="off"></el-input>
         </el-form-item>
         <el-form-item label="图片" label-width="120px">
@@ -18,7 +18,7 @@
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button @click="cancel">取 消</el-button>
-        <el-button type="primary" v-if="info.title==='编辑轮播图'" @click='updated'>修改</el-button>
+        <el-button type="primary" v-if="info.title==='编辑轮播图'" @click="updated">修改</el-button>
         <el-button type="primary" @click="add" v-else>添加</el-button>
       </div>
     </el-dialog>
@@ -28,7 +28,11 @@
 import { mapActions, mapGetters } from "vuex";
 import path from "path";
 import { errorAlert, successAlert } from "../../../utils/alert";
-import { reqBannerAdd,reqBannerDetail,reqBannerUpdate } from "../../../utils/hppts";
+import {
+  reqBannerAdd,
+  reqBannerDetail,
+  reqBannerUpdate,
+} from "../../../utils/hppts";
 export default {
   data() {
     return {
@@ -38,6 +42,9 @@ export default {
         status: 1,
       },
       imgUrl: "",
+      rules: {
+        title: [{ required: true, message: "请输入标题", trigger: "blur" }],
+      },
     };
   },
   props: ["info"],
@@ -72,33 +79,45 @@ export default {
       this.imgUrl = URL.createObjectURL(file);
     },
     add() {
-      reqBannerAdd(this.banner).then((res) => {
-        successAlert("添加成功");
-        this.cancel();
-        this.reqList();
-        this.empty();
+      return new Promise((resolve, reject) => {
+        if (this.banner.title === "") {
+          errorAlert("一级分类不能为空");
+          return;
+        }
+        if (!this.banner.img) {
+          errorAlert("请选择图片");
+          return;
+        }
+        resolve();
+      }).then(() => {
+        reqBannerAdd(this.banner).then((res) => {
+          successAlert("添加成功");
+          this.cancel();
+          this.reqList();
+          this.empty();
+        });
       });
     },
-    getOne(id){
-        reqBannerDetail(id).then(res=>{
-            this.banner=res.data.list;
-            this.imgUrl=this.$imgPre+res.data.list.img;
-            this.banner.id=id;
-        })
+    getOne(id) {
+      reqBannerDetail(id).then((res) => {
+        this.banner = res.data.list;
+        this.imgUrl = this.$imgPre + res.data.list.img;
+        this.banner.id = id;
+      });
     },
-    updated(){
-        reqBannerUpdate(this.banner).then(res=>{
-            successAlert('修改成功')
-            this.reqList();
-            this.empty();
-            this.cancel();
-        })
+    updated() {
+      reqBannerUpdate(this.banner).then((res) => {
+        successAlert("修改成功");
+        this.reqList();
+        this.empty();
+        this.cancel();
+      });
     },
-    closed(){
-        if(this.info.title=='编辑轮播图'){
-            this.empty();
-        }
-    }
+    closed() {
+      if (this.info.title == "编辑轮播图") {
+        this.empty();
+      }
+    },
   },
   mounted() {},
 };

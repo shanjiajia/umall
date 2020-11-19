@@ -1,16 +1,21 @@
 <template>
   <div>
     <el-dialog :title="info.title" :visible.sync="info.isshow" @closed="closed">
-      <el-form :model="user">
-        <el-form-item label="所属角色" label-width="120px">
+      <el-form :model="user" :rules="rules">
+        <el-form-item label="所属角色" label-width="120px" prop="roleid">
           <el-select v-model="user.roleid" placeholder="请选择角色">
-              <el-option v-for='item in rolelist' :key="item.id" :value="item.id" :label='item.rolename'></el-option>
+            <el-option
+              v-for="item in rolelist"
+              :key="item.id"
+              :value="item.id"
+              :label="item.rolename"
+            ></el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="用户名" label-width="120px">
+        <el-form-item label="用户名" label-width="120px" prop="username">
           <el-input v-model="user.username" autocomplete="off"></el-input>
         </el-form-item>
-        <el-form-item label="密码" label-width="120px">
+        <el-form-item label="密码" label-width="120px" prop="password">
           <el-input v-model="user.password" autocomplete="off"></el-input>
         </el-form-item>
 
@@ -29,70 +34,101 @@
 </template>
 <script>
 import { mapActions, mapGetters } from "vuex";
-import {reqRoleList,reqUserAdd,reqUserDetail,reqUserUpdate} from '../../../utils/hppts';
-import{successAlert,errorAlert} from '../../../utils/alert'
+import {
+  reqRoleList,
+  reqUserAdd,
+  reqUserDetail,
+  reqUserUpdate,
+} from "../../../utils/hppts";
+import { successAlert, errorAlert } from "../../../utils/alert";
 export default {
   props: ["info"],
-  data(){
-      return{
-          user:{
-             roleid:'',
-             username:'' ,
-             password:'',
-             status:1
-          },
-          rolelist:[]
-      }
+  data() {
+    return {
+      user: {
+        roleid: "",
+        username: "",
+        password: "",
+        status: 1,
+      },
+      rolelist: [],
+      rules: {
+        roleid: [
+          { required: true, message: "请输入所属角色", trigger: "change" },
+        ],
+        username: [
+          { required: true, message: "请输入用户名", trigger: "blur" },
+        ],
+        password: [{ required: true, message: "请输入密码", trigger: "blur" }],
+      },
+    };
   },
   computed: {
     ...mapGetters({}),
   },
   methods: {
     ...mapActions({}),
-    empty(){
-        this.user={
-            roleid:'',
-             username:'' ,
-             password:'',
-             status:1
+    empty() {
+      this.user = {
+        roleid: "",
+        username: "",
+        password: "",
+        status: 1,
+      };
+    },
+    closed() {
+      if (this.info.title == "编辑管理员") {
+        this.empty();
+      }
+    },
+    cancel() {
+      this.info.isshow = false;
+    },
+    getOne(uid) {
+      console.log(uid);
+      reqUserDetail(uid).then((res) => {
+        this.user = res.data.list;
+        this.user.password = "";
+      });
+    },
+    update() {
+      reqUserUpdate(this.user).then((res) => {
+        successAlert("修改成功");
+        this.empty();
+        this.cancel();
+        this.$emit("init");
+      });
+    },
+    add() {
+      return new Promise((resolve, reject) => {
+        //验证
+        if (this.user.roleid === "") {
+          errorAlert("所属角色不能为空");
+          return;
         }
-    },
-    closed(){
-        if(this.info.title=='编辑管理员'){
-            this.empty()
+        if (this.user.username === "") {
+          errorAlert("用户名不能为空");
+          return;
         }
+        if (this.user.password === "") {
+          errorAlert("密码不能为空");
+          return;
+        }
+        resolve();
+      }).then(() => {
+        reqUserAdd(this.user).then((res) => {
+          successAlert("添加成功");
+          this.cancel();
+          this.empty();
+          this.$emit("init");
+        });
+      });
     },
-    cancel(){
-        this.info.isshow=false;
-    },
-    getOne(uid){
-        console.log(uid)
-        reqUserDetail(uid).then(res=>{
-            this.user=res.data.list;
-            this.user.password=''
-        })
-    },
-    update(){
-        reqUserUpdate(this.user).then(res=>{
-            successAlert('修改成功');
-            this.empty();
-            this.cancel();
-            this.$emit('init')
-        })
-    },
-    add(){
-        reqUserAdd(this.user).then(res=>{
-            successAlert('添加成功')
-            this.cancel();
-            this.empty();
-            this.$emit('init')
-        })
-    }
   },
   mounted() {
-      reqRoleList().then(res=>{
-          this.rolelist=res.data.list;
-      })
+    reqRoleList().then((res) => {
+      this.rolelist = res.data.list;
+    });
   },
 };
 </script>

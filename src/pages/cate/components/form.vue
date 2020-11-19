@@ -1,8 +1,8 @@
 <template>
   <div>
     <el-dialog :title="info.title" :visible.sync="info.isshow" @closed="closed">
-      <el-form :model="user">
-        <el-form-item label="上级分类" label-width="120px">
+      <el-form :model="user" :rules='rules'>
+        <el-form-item label="上级分类" label-width="120px" prop='pid'>
           <el-select v-model="user.pid" placeholder="请选择角色">
             <el-option :value="0" label="顶级分类">顶级分类</el-option>
             <el-option
@@ -13,7 +13,7 @@
             ></el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="分类名称" label-width="120px">
+        <el-form-item label="分类名称" label-width="120px" prop='catename'>
           <el-input v-model="user.catename" autocomplete="off"></el-input>
         </el-form-item>
         <el-form-item label="图片" label-width="120px" v-if="user.pid!==0">
@@ -53,6 +53,14 @@ export default {
         status: 1,
       },
       imgUrl: "",
+      rules: {
+        pid: [
+          { required: true, message: "请输入上级菜单", trigger: "change" },
+        ],
+        catename: [
+          { required: true, message: "请输入分类名称", trigger: "blur" },
+        ],
+      },
     };
   },
   computed: {
@@ -97,12 +105,29 @@ export default {
         (this.imgUrl = "");
     },
     add() {
-      reqCateAdd(this.user).then((res) => {
+      return new Promise((resolve, reject) => {
+        if (this.user.pid === "") {
+          errorAlert("上级菜单不能为空");
+          return;
+        }
+        if (this.user.catename === "") {
+          errorAlert("分类名称不能为空");
+          return;
+        }
+        if (!this.user.img) {
+          errorAlert("请选择图片");
+          return;
+        }
+        resolve();
+      }).then(()=>{
+        reqCateAdd(this.user).then((res) => {
         successAlert("添加成功");
         this.empty();
         this.cancel();
         this.reqList();
       });
+      })
+      
     },
     closed() {
       if (this.info.title === "添加分类") {

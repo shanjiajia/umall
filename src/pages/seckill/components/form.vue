@@ -1,11 +1,11 @@
 <template>
   <div>
     <el-dialog :title="info.title" :visible.sync="info.isshow" @closed="closed">
-      <el-form :model="form">
-        <el-form-item label="活动名称" label-width="80px">
+      <el-form :model="form" :rules="rules">
+        <el-form-item label="活动名称" label-width="80px" prop="title">
           <el-input v-model="form.title" autocomplete="off"></el-input>
         </el-form-item>
-        <el-form-item label="活动期限" label-width="80px">
+        <el-form-item label="活动期限" label-width="80px" prop="time">
           <el-date-picker
             v-model="time"
             type="datetimerange"
@@ -15,7 +15,7 @@
             @change="changeTime"
           ></el-date-picker>
         </el-form-item>
-        <el-form-item label="一级分类" label-width="80px">
+        <el-form-item label="一级分类" label-width="80px" prop="first_cateid">
           <el-select v-model="form.first_cateid" placeholder="请选择分类" @change="changeFirst">
             <el-option
               v-for="item in cateList"
@@ -25,7 +25,7 @@
             ></el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="二级分类" label-width="80px">
+        <el-form-item label="二级分类" label-width="80px" prop="second_cateid">
           <el-select v-model="form.second_cateid" placeholder="请选择分类" @change="changeSecond">
             <el-option
               v-for="(item,ind) of secondList"
@@ -35,7 +35,7 @@
             ></el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="商品" label-width="80px">
+        <el-form-item label="商品" label-width="80px" prop="goodsid">
           <el-select v-model="form.goodsid" placeholder="请选择商品">
             <el-option
               v-for="item in goodsList"
@@ -59,7 +59,7 @@
 </template>
 <script>
 import { mapActions, mapGetters } from "vuex";
-import { successAlert } from "../../../utils/alert";
+import { successAlert,errorAlert } from "../../../utils/alert";
 import {
   reqCateList,
   reqseckAdd,
@@ -81,6 +81,16 @@ export default {
       },
       time: [],
       secondList: [],
+      rules: {
+        title: [{ required: true, message: "请输入活动名称", trigger: "blur" }],
+        first_cateid: [
+          { required: true, message: "请输入一级分类", trigger: "change" },
+        ],
+        second_cateid: [
+          { required: true, message: "请输入二级分类", trigger: "change" },
+        ],
+        goodsid: [{ required: true, message: "请输入商品", trigger: "change" }],
+      },
     };
   },
   computed: {
@@ -112,8 +122,8 @@ export default {
       });
     },
     changeSecond() {
-        this.form.goodsid = "";
-        this.secondId();
+      this.form.goodsid = "";
+      this.secondId();
     },
     changeTime() {
       this.form.begintime = this.time[0].getTime();
@@ -135,12 +145,40 @@ export default {
     cancel() {
       this.info.isshow = false;
     },
+    check() {
+      return new Promise((resolve, reject) => {
+        //验证
+        if (this.form.title === "") {
+          errorAlert("活动名称为空");
+          return;
+        }
+         if (this.time.length==0) {
+          errorAlert("活动期限不能为空");
+          return;
+        }
+        if (this.form.first_cateid === "") {
+          errorAlert("一级分类不能为空");
+          return;
+        }
+        if (this.form.second_cateid === "") {
+          errorAlert("二级分类不能为空");
+          return;
+        }
+        if (this.form.goodsid === "") {
+          errorAlert("商品不能为空");
+          return;
+        }
+        resolve();
+      });
+    },
     add() {
-      reqseckAdd(this.form).then((res) => {
-        successAlert("添加成功");
-        this.empty();
-        this.cancel();
-        this.reqSeckList();
+      this.check().then(() => {
+        reqseckAdd(this.form).then((res) => {
+          successAlert("添加成功");
+          this.empty();
+          this.cancel();
+          this.reqSeckList();
+        });
       });
     },
     getOne(id) {
@@ -152,7 +190,7 @@ export default {
         ];
         this.firstId();
         this.secondId();
-        this.form.id=id;
+        this.form.id = id;
       });
     },
     updated() {

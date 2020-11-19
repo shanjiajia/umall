@@ -1,8 +1,8 @@
 <template>
   <div>
     <el-dialog :title="info.title" :visible.sync="info.isshow" @closed="closed">
-      <el-form :model="user">
-        <el-form-item label="规格名称" label-width="120px">
+      <el-form :model="user" :rules="rules">
+        <el-form-item label="规格名称" label-width="120px" prop="specsname">
           <el-input v-model="user.specsname" autocomplete="off"></el-input>
         </el-form-item>
         <el-form-item label="规格属性" label-width="120px" v-for="(item,ind) of attrarr" :key="ind">
@@ -28,8 +28,12 @@
 </template>
 <script>
 import { mapActions, mapGetters } from "vuex";
-import {reqSpecsAdd,reqSpecsDetail,reqSpecsUpdate} from '../../../utils/hppts';
-import {successAlert} from '../../../utils/alert';
+import {
+  reqSpecsAdd,
+  reqSpecsDetail,
+  reqSpecsUpdate,
+} from "../../../utils/hppts";
+import { successAlert, errorAlert } from "../../../utils/alert";
 export default {
   props: ["info"],
   data() {
@@ -39,7 +43,12 @@ export default {
         attrs: "",
         status: 1,
       },
-      attrarr:[{value:''}]
+      attrarr: [{ value: "" }],
+      rules: {
+        specsname: [
+          { required: true, message: "请输入规格名称", trigger: "blur" },
+        ],
+      },
     };
   },
   components: {
@@ -47,66 +56,75 @@ export default {
   },
   methods: {
     ...mapActions({
-        reqList:'specs/reqList',
-        reqCount:'specs/reqCount',
+      reqList: "specs/reqList",
+      reqCount: "specs/reqCount",
     }),
     cancel() {
       this.info.isshow = false;
     },
     closed() {
-      if ((this.info.title == "编辑规格")) {
-        this.empty()
+      if (this.info.title == "编辑规格") {
+        this.empty();
       }
     },
     //点击向数组中添加数据，循环绑定到form表单上
-    addAttr(){
-        this.attrarr.push({value:''})
+    addAttr() {
+      this.attrarr.push({ value: "" });
     },
     //点击删除数据，循环绑定到form表单上
-    delAttr(i){
-        this.attrarr.splice(i,1)
+    delAttr(i) {
+      this.attrarr.splice(i, 1);
     },
-    empty(){
-        this.user={
+    empty() {
+      (this.user = {
         specsname: "",
         attrs: "",
         status: 1,
-      },
-      this.attrarr=[{value:''}]
+      }),
+        (this.attrarr = [{ value: "" }]);
     },
-    add(){
-        let arr = this.attrarr.map(item=>{
-            return item.value
+    add() {
+      return new Promise((resolve, reject) => {
+        //验证
+        if (this.user.specsname === "") {
+          errorAlert("规格名称不能为空");
+          return;
+        }
+        resolve();
+      }).then(() => {
+        let arr = this.attrarr.map((item) => {
+          return item.value;
         });
-        this.user.attrs=JSON.stringify(arr);
-        reqSpecsAdd(this.user).then(res=>{
-            successAlert("添加成功");
-            this.cancel();
-            this.empty();
-            this.reqList(),
-            this.reqCount()
-        })
+        this.user.attrs = JSON.stringify(arr);
+        reqSpecsAdd(this.user).then((res) => {
+          successAlert("添加成功");
+          this.cancel();
+          this.empty();
+          this.reqList(), this.reqCount();
+        });
+      });
     },
-    getOne(id){
-        reqSpecsDetail(id).then(res=>[
-            this.user=res.data.list[0],
-            this.attrarr=JSON.parse(this.user.attrs).map(item=>{
-                return {value:item}
-            }),
-            this.user.id=id,
-            console.log(this.user)
-        ])
+    getOne(id) {
+      reqSpecsDetail(id).then((res) => [
+        (this.user = res.data.list[0]),
+        (this.attrarr = JSON.parse(this.user.attrs).map((item) => {
+          return { value: item };
+        })),
+        (this.user.id = id),
+        console.log(this.user),
+      ]);
     },
     update() {
-        this.user.attrs=JSON.stringify(this.attrarr.map(item=>{
-            return item.value
-        }))
-        reqSpecsUpdate(this.user).then(res=>{
-            successAlert('修改成功 ')
-            this.reqList(),
-            this.cancel();
-            this.empty();
+      this.user.attrs = JSON.stringify(
+        this.attrarr.map((item) => {
+          return item.value;
         })
+      );
+      reqSpecsUpdate(this.user).then((res) => {
+        successAlert("修改成功 ");
+        this.reqList(), this.cancel();
+        this.empty();
+      });
     },
   },
   mounted() {},
